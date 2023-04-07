@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"net"
 	"os"
@@ -18,30 +19,25 @@ func main() {
 		os.Exit(1)
 	}
 	defer l.Close()
-
-	for {
-		conn, err := l.Accept()
-		if err != nil {
-			fmt.Println("Error accepting connection: ", err.Error())
-			os.Exit(1)
-		}
-		handleRequest(conn)
+	conn, err := l.Accept()
+	if err != nil {
+		fmt.Println("Error accepting connection: ", err.Error())
+		os.Exit(1)
 	}
+	defer conn.Close()
+
+	handleConnection(conn)
 
 }
 
-func handleRequest(conn net.Conn) {
-	defer conn.Close()
+func handleConnection(conn net.Conn) {
+	for {
+		_, err := bufio.NewReader(conn).ReadString('\n')
+		if err != nil {
+			fmt.Println("Error reading from connection: ", err.Error())
+			return
+		}
 
-	msg := make([]byte, 1024)
-	_, err := conn.Read(msg)
-	if err != nil {
-		fmt.Println("Error reading from connection: ", err.Error())
-		os.Exit(1)
-	}
-	_, err = conn.Write([]byte("+PONG\r\n"))
-	if err != nil {
-		fmt.Println("Error writing to connection: ", err.Error())
-		os.Exit(1)
+		conn.Write([]byte("+PONG\r\n"))
 	}
 }
