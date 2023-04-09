@@ -2,7 +2,9 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
+	"io"
 	"net"
 	"os"
 )
@@ -27,7 +29,6 @@ func main() {
 			os.Exit(1)
 		}
 		go handleConnection(conn)
-		conn.Close()
 	}
 
 }
@@ -36,10 +37,17 @@ func handleConnection(conn net.Conn) {
 	for {
 		_, err := bufio.NewReader(conn).ReadString('\n')
 		if err != nil {
+			if errors.Is(err, io.EOF) {
+				fmt.Println("stream consumed")
+				conn.Close()
+				return
+			}
 			fmt.Println("Error reading from connection: ", err.Error())
+			conn.Close()
 			return
 		}
 
 		conn.Write([]byte("+PONG\r\n"))
 	}
+
 }
